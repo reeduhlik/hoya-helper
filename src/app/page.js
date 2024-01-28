@@ -92,7 +92,7 @@ export default function Home() {
         ...currentChat,
         { role: "user", content: input },
       ],
-      max_tokens: 400,
+      max_tokens: 600,
       stop: null,
       temperature: 1,
       inScope: false,
