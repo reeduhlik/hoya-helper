@@ -11,15 +11,18 @@ import ReactMarkdown from "react-markdown";
 
 export default function Home() {
   const [recentChats, setRecentChats] = useState([]);
-
   const [currentChat, setCurrentChat] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  //prompt fed to GPT in the beginning
   const systemPrompt = {
     role: "system",
     content:
       "You are a factual, conversational chatbot for Georgetown University. The provided data is ONLY to be used if you don't have a specific answer.  NEVER SAY that you don't know or the requested information is not in the documents.  Again, this is only to be used if you don't have a specific answer. Also maintain a supportive tone to inform and support the high schooler users.",
   };
 
+  //FAQs to be displayed when the user first opens the app
   const [faqs, setFaqs] = useState([
     "When will the first year application for Fall 2025 be available?",
     "What are some popular classes for International Economics majors at Georgetown?",
@@ -27,6 +30,7 @@ export default function Home() {
     "Tell me about recent residential changes at georgetown.",
   ]);
 
+  //enter key to submit search
   const handleKeyDown = (event) => {
     if (event.keyCode === 13 && loading == false) {
       submitSearch();
@@ -35,43 +39,33 @@ export default function Home() {
 
   useEventListener("keydown", handleKeyDown);
 
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const updateScroll = () => {
-    const element = document.getElementById("chatbubbles");
-
-    element.scrollTop = element.scrollHeight;
-  };
-
+  //API key for Azure Search & Azure OpenAI
   const api_key = "b6f9c0cfbd2c493f86743dfb6d1e3da4";
-
   const search_url = "https://team20.search.windows.net";
   const search_key = "34NGtYQVlBK2m47yXobE4JMugTC7hMqVwKPjbvQIhWAzSeBGQuHm";
 
+  //moves current chat to recent chats and clears current chat
   const newChatFunction = () => {
     setRecentChats((recentChats) => [...recentChats, currentChat]);
     setCurrentChat([]);
   };
 
   const populateCurrentChat = (index) => {
-    console.log(index);
-    console.log(recentChats[index]);
     setCurrentChat(recentChats[index]);
   };
+
+  //main submit search function
   const submitSearch = async () => {
     if (input == "") return;
 
+    //adds the spinner to the chat
     setLoading(true);
-
-    console.log("Input is " + input);
 
     //output the currentchat array
 
     //take the current input to query Azure Search
 
-    console.log("Calling Azure Search");
-
+    //REST API call to Azure Search
     const payload = {
       dataSources: [
         {
@@ -98,8 +92,6 @@ export default function Home() {
       inScope: false,
     };
 
-    console.log(payload);
-
     setCurrentChat((currentChat) => [
       ...currentChat,
       {
@@ -110,6 +102,7 @@ export default function Home() {
 
     setInput("");
 
+    //API call to Azure OpenAI
     const res = await fetch(
       "https://studio205859928605.openai.azure.com/openai/deployments/gpt-4/extensions/chat/completions?api-version=2023-08-01-preview",
       {
@@ -142,11 +135,13 @@ export default function Home() {
 
     console.log(data);
 
+    //get the response text from the first choice
     let responseText = data.choices[0].message.content;
 
     //remove any substrings that are [doc1]
     responseText = responseText.replace(/\[doc\d\]/g, "");
 
+    //parses the relevant links from the context
     if (data.choices[0].message.context) {
       responseText += "\n\n\n**Relevant Links**";
       console.log("CONTEXT");
@@ -168,8 +163,6 @@ export default function Home() {
     console.log(currentChat);
     setLoading(false);
   };
-
-  useEffect(() => {}, []);
 
   return (
     <main className={styles.main}>
